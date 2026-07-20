@@ -103,25 +103,19 @@ async function fetchTemplateViaNext(context) {
 // }
 
 async function fetchTemplate(context) {
-    // Get the origin from the incoming request URL (works in both prod and local)
-    const origins = [];
-
-    // Primary: use the actual request origin (correct in prod + local)
-    if (context?.request?.url) {
-        const reqOrigin = new URL(context.request.url).origin;
-        origins.push(reqOrigin);
-    }
-
-    // Local dev fallbacks
-    origins.push("http://localhost:8888");
-    origins.push("http://localhost:3999");
-
-    for (const origin of origins) {
-        try {
-            const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
-            if (res.ok) return res;
-        } catch (_) {
-            // try next origin
+    // In Netlify edge functions, we can't fetch from our own origin.
+    // Read the file directly instead.
+    try {
+        const text = await Deno.readTextFile("./referral-template.html");
+        return new Response(text, { status: 200 });
+    } catch (_) {
+        // Local dev fallback — fetch from static server
+        const origins = ["http://localhost:8888", "http://localhost:3999"];
+        for (const origin of origins) {
+            try {
+                const res = await fetch(`${origin}/referral-template.html`);
+                if (res.ok) return res;
+            } catch (_) {}
         }
     }
 
