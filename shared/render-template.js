@@ -11,7 +11,8 @@
 // replaced by the placeholder token below). See MIGRATION note at the bottom.
 // ============================================================================
 
-const TEMPLATE_URL_PATH = "/referral-template.html";
+// const TEMPLATE_URL_PATH = "/referral-template.html";
+import TEMPLATE_HTML from "../../referral-template.html" assert { type: "text" };
 
 // The placeholder we look for in the template and replace with real data.
 // In referral-template.html the per-referrer object is written as:
@@ -103,27 +104,7 @@ async function fetchTemplateViaNext(context) {
 // }
 
 async function fetchTemplate(context) {
-    // Debug: try multiple known Netlify edge function file paths
-    const pathsToTry = [
-        "./referral-template.html",
-        "../referral-template.html",
-        "/var/task/referral-template.html",
-        "/opt/buildhome/repo/referral-template.html",
-        new URL("../../referral-template.html", import.meta.url).pathname,
-        new URL("../../../referral-template.html", import.meta.url).pathname,
-    ];
-
-    for (const p of pathsToTry) {
-        try {
-            const text = await Deno.readTextFile(p);
-            console.log("Template found at:", p);
-            return new Response(text, { status: 200 });
-        } catch (e) {
-            console.log("Not found at:", p, e.message);
-        }
-    }
-
-    // Local dev fallback
+    // Local dev: fetch from static server
     const origins = ["http://localhost:8888", "http://localhost:3999"];
     for (const origin of origins) {
         try {
@@ -131,8 +112,8 @@ async function fetchTemplate(context) {
             if (res.ok) return res;
         } catch (_) {}
     }
-
-    throw new Error("Could not load referral-template.html from any origin");
+    // Production: use bundled template
+    return new Response(TEMPLATE_HTML, { status: 200 });
 }
 
 // --- tiny escapers (no deps at the edge) ---
