@@ -103,20 +103,33 @@ async function fetchTemplateViaNext(context) {
 // }
 
 async function fetchTemplate(context) {
-    // In Netlify edge functions, we can't fetch from our own origin.
-    // Read the file directly instead.
-    try {
-        const text = await Deno.readTextFile("./referral-template.html");
-        return new Response(text, { status: 200 });
-    } catch (_) {
-        // Local dev fallback — fetch from static server
-        const origins = ["http://localhost:8888", "http://localhost:3999"];
-        for (const origin of origins) {
-            try {
-                const res = await fetch(`${origin}/referral-template.html`);
-                if (res.ok) return res;
-            } catch (_) {}
+    // Debug: try multiple known Netlify edge function file paths
+    const pathsToTry = [
+        "./referral-template.html",
+        "../referral-template.html",
+        "/var/task/referral-template.html",
+        "/opt/buildhome/repo/referral-template.html",
+        new URL("../../referral-template.html", import.meta.url).pathname,
+        new URL("../../../referral-template.html", import.meta.url).pathname,
+    ];
+
+    for (const p of pathsToTry) {
+        try {
+            const text = await Deno.readTextFile(p);
+            console.log("Template found at:", p);
+            return new Response(text, { status: 200 });
+        } catch (e) {
+            console.log("Not found at:", p, e.message);
         }
+    }
+
+    // Local dev fallback
+    const origins = ["http://localhost:8888", "http://localhost:3999"];
+    for (const origin of origins) {
+        try {
+            const res = await fetch(`${origin}/referral-template.html`);
+            if (res.ok) return res;
+        } catch (_) {}
     }
 
     throw new Error("Could not load referral-template.html from any origin");
