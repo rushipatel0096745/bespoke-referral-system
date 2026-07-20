@@ -125,12 +125,17 @@
         </div>
 
         <script>
-            const SUPABASE_URL = "https://aebrzrvzgusrqwbwdbgi.supabase.co";
-            const SUPABASE_ANON_KEY =
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ";
+            // const SUPABASE_URL = "https://aebrzrvzgusrqwbwdbgi.supabase.co";
+            // const SUPABASE_ANON_KEY =
+            //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ";
+
+
+            const res = await fetch('/api/config');
+            const { supabaseUrl, supabaseKey } = await res.json();
 
             const { createClient } = supabase;
-            const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            // const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const db = createClient(supabaseUrl, supabaseKey);
 
             db.auth.getSession().then(({ data }) => {
                 if (data.session) window.location.href = "/hub/dashboard.html";
