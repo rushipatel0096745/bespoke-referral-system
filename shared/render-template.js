@@ -25,98 +25,69 @@ const DATA_CLOSE = "/*__END_MC_DATA__*/";
  * @returns {Promise<string>} full HTML
  */
 export async function renderReferralPage(referrer, { context, slug }) {
-    const templateRes = await fetchTemplate(context);
+  // Fetch the static template from our own origin (Netlify serves it).
+  const templateRes = await context.next
+    ? await fetchTemplateViaNext(context)
+    : await fetch(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
 
-    let html = await templateRes.text();
+  let html = await templateRes.text();
 
-    // The object we inject. Only safe, display + attribution fields - never
-    // anything sensitive. `ref` (the slug) and `stripe_ref` travel with the page.
-    const mcData = {
-        slug,
-        ref: slug,
-        name: referrer.name || "your Memory Catcher",
-        photo: referrer.photo || "/assets/mc-ashley.webp",
-        offer: referrer.offer || "",
-        code: referrer.code || "",
-        stripe_ref: referrer.stripe_ref, // read by the add-to-cart flow
-    };
+  // The object we inject. Only safe, display + attribution fields - never
+  // anything sensitive. `ref` (the slug) and `stripe_ref` travel with the page.
+  const mcData = {
+    slug,
+    ref: slug,
+    name: referrer.name || "your Memory Catcher",
+    photo: referrer.photo || "/assets/mc-ashley.webp",
+    offer: referrer.offer || "",
+    code: referrer.code || "",
+    stripe_ref: referrer.stripe_ref, // read by the add-to-cart flow
+  };
 
-    const injected = `${DATA_OPEN} ${JSON.stringify(mcData)} ${DATA_CLOSE}`;
+  const injected = `${DATA_OPEN} ${JSON.stringify(mcData)} ${DATA_CLOSE}`;
 
-    // Replace the placeholder block:  /*__MC_DATA__*/ ... /*__END_MC_DATA__*/
-    const re = new RegExp(escapeRegExp(DATA_OPEN) + "[\\s\\S]*?" + escapeRegExp(DATA_CLOSE));
-    if (re.test(html)) {
-        html = html.replace(re, injected);
-    } else {
-        // Template not migrated yet - fail loud in logs, still serve the page.
-        console.error("referral-template.html missing MC_DATA placeholder");
-    }
+  // Replace the placeholder block:  /*__MC_DATA__*/ ... /*__END_MC_DATA__*/
+  const re = new RegExp(
+    escapeRegExp(DATA_OPEN) + "[\\s\\S]*?" + escapeRegExp(DATA_CLOSE)
+  );
+  if (re.test(html)) {
+    html = html.replace(re, injected);
+  } else {
+    // Template not migrated yet - fail loud in logs, still serve the page.
+    console.error("referral-template.html missing MC_DATA placeholder");
+  }
 
-    // Also expose the slug as a body data attribute + <title> personalisation,
-    // so it is genuinely available "throughout the page" (CSS, JS, analytics).
-    html = html
-        .replace("<body", `<body data-ref="${escapeAttr(slug)}"`)
-        .replace(
-            /<title>[\s\S]*?<\/title>/,
-            `<title>Order Your Kit with ${escapeHtml(mcData.name)} | Bespoke Foil Company</title>`
-        );
+  // Also expose the slug as a body data attribute + <title> personalisation,
+  // so it is genuinely available "throughout the page" (CSS, JS, analytics).
+  html = html
+    .replace("<body", `<body data-ref="${escapeAttr(slug)}"`)
+    .replace(
+      /<title>[\s\S]*?<\/title>/,
+      `<title>Order Your Kit with ${escapeHtml(mcData.name)} | Bespoke Foil Company</title>`
+    );
 
-    return html;
+  return html;
 }
 
-/**
- * Fetch the referral-template.html.
- *
- * Production (Netlify Edge): uses context.next() so the request is resolved
- * by Netlify's CDN on the same host — no cross-origin fetch needed.
- *
- * Local dev (netlify dev): context.next() resolves to localhost; the static
- * server on :8888 or :3999 serves the file directly.
- */
-async function fetchTemplate(context) {
-    // context.next() works in both production and local netlify dev.
-    if (context?.next) {
-        try {
-            // Netlify ignores the hostname in context.next() — only the path matters.
-            // We use a dummy base so new URL() is satisfied.
-            const req = new Request(new URL(TEMPLATE_URL_PATH, "http://localhost"));
-            const res = await context.next(req);
-            if (res.ok) return res;
-            console.warn("context.next() returned non-OK for template:", res.status);
-        } catch (err) {
-            console.warn("context.next() threw for template fetch:", err.message);
-        }
-    }
-
-    // Hard fallback for local dev without a full context (e.g. unit tests).
-    const origins = ["http://localhost:8888", "http://localhost:3999"];
-    for (const origin of origins) {
-        try {
-            const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
-            if (res.ok) return res;
-        } catch (_) {
-            // try next origin
-        }
-    }
-
-    throw new Error(
-        "Could not load referral-template.html — " +
-        "make sure it exists at the repo root and is published by Netlify."
-    );
+// Fetch the template through the edge context so we hit the deployed static file.
+async function fetchTemplateViaNext(context) {
+  const req = new Request(
+    new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk")
+  );
+  return context.next(req);
 }
 
 // --- tiny escapers (no deps at the edge) ---
 function escapeRegExp(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function escapeHtml(s) {
-    return String(s).replace(
-        /[&<>"']/g,
-        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-    );
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
 }
 function escapeAttr(s) {
-    return escapeHtml(s).replace(/\s+/g, "-");
+  return escapeHtml(s).replace(/\s+/g, "-");
 }
 
 // ----------------------------------------------------------------------------
@@ -129,3 +100,6 @@ function escapeAttr(s) {
 //   3. Everything else in that file (renderMemoryCatcher(), the markup) stays.
 //   4. Delete the old per-person static files once the dynamic route is verified.
 // ----------------------------------------------------------------------------
+
+
+
