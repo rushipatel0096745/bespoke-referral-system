@@ -11,8 +11,7 @@
 // replaced by the placeholder token below). See MIGRATION note at the bottom.
 // ============================================================================
 
-// const TEMPLATE_URL_PATH = "/referral-template.html";
-import TEMPLATE_HTML from "../../referral-template.html" assert { type: "text" };
+const TEMPLATE_URL_PATH = "/referral-template.html";
 
 // The placeholder we look for in the template and replace with real data.
 // In referral-template.html the per-referrer object is written as:
@@ -26,11 +25,6 @@ const DATA_CLOSE = "/*__END_MC_DATA__*/";
  * @returns {Promise<string>} full HTML
  */
 export async function renderReferralPage(referrer, { context, slug }) {
-    // Fetch the static template from our own origin (Netlify serves it).
-    // const templateRes = await context.next
-    //   ? await fetchTemplateViaNext(context)
-    //   : await fetch(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
-
     const templateRes = await fetchTemplate(context);
 
     let html = await templateRes.text();
@@ -70,50 +64,45 @@ export async function renderReferralPage(referrer, { context, slug }) {
     return html;
 }
 
-// Fetch the template through the edge context so we hit the deployed static file.
-async function fetchTemplateViaNext(context) {
-    const req = new Request(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
-    return context.next(req);
-}
-
-// async function fetchTemplate(context) {
-//     // Try context.next() first (works in Netlify edge production — same host).
-//     if (context?.next) {
-//         try {
-//             const req = new Request(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
-//             const res = await context.next(req);
-//             if (res.ok) return res;
-//         } catch (_) {
-//             // Falls through to direct fetch below
-//         }
-//     }
-
-//     // Local dev fallback — fetch from the static server directly.
-//     const origins = ["http://localhost:8888", "http://localhost:3999"];
-
-//     for (const origin of origins) {
-//         try {
-//             const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
-//             if (res.ok) return res;
-//         } catch (_) {
-//             // try next
-//         }
-//     }
-
-//     throw new Error("Could not load referral-template.html from any origin");
-// }
-
+/**
+ * Fetch the referral-template.html.
+ *
+ * Production (Netlify Edge): uses context.next() so the request is resolved
+ * by Netlify's CDN on the same host — no cross-origin fetch needed.
+ *
+ * Local dev (netlify dev): context.next() resolves to localhost; the static
+ * server on :8888 or :3999 serves the file directly.
+ */
 async function fetchTemplate(context) {
-    // Local dev: fetch from static server
+    // context.next() works in both production and local netlify dev.
+    if (context?.next) {
+        try {
+            const req = new Request(
+                new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk")
+            );
+            const res = await context.next(req);
+            if (res.ok) return res;
+            console.warn("context.next() returned non-OK for template:", res.status);
+        } catch (err) {
+            console.warn("context.next() threw for template fetch:", err.message);
+        }
+    }
+
+    // Hard fallback for local dev without a full context (e.g. unit tests).
     const origins = ["http://localhost:8888", "http://localhost:3999"];
     for (const origin of origins) {
         try {
-            const res = await fetch(`${origin}/referral-template.html`);
+            const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
             if (res.ok) return res;
-        } catch (_) {}
+        } catch (_) {
+            // try next origin
+        }
     }
-    // Production: use bundled template
-    return new Response(TEMPLATE_HTML, { status: 200 });
+
+    throw new Error(
+        "Could not load referral-template.html — " +
+        "make sure it exists at the repo root and is published by Netlify."
+    );
 }
 
 // --- tiny escapers (no deps at the edge) ---
