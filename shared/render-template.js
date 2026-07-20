@@ -75,27 +75,53 @@ async function fetchTemplateViaNext(context) {
     return context.next(req);
 }
 
+// async function fetchTemplate(context) {
+//     // Try context.next() first (works in Netlify edge production — same host).
+//     if (context?.next) {
+//         try {
+//             const req = new Request(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
+//             const res = await context.next(req);
+//             if (res.ok) return res;
+//         } catch (_) {
+//             // Falls through to direct fetch below
+//         }
+//     }
+
+//     // Local dev fallback — fetch from the static server directly.
+//     const origins = ["http://localhost:8888", "http://localhost:3999"];
+
+//     for (const origin of origins) {
+//         try {
+//             const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
+//             if (res.ok) return res;
+//         } catch (_) {
+//             // try next
+//         }
+//     }
+
+//     throw new Error("Could not load referral-template.html from any origin");
+// }
+
 async function fetchTemplate(context) {
-    // Try context.next() first (works in Netlify edge production — same host).
-    if (context?.next) {
-        try {
-            const req = new Request(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
-            const res = await context.next(req);
-            if (res.ok) return res;
-        } catch (_) {
-            // Falls through to direct fetch below
-        }
+    // Get the origin from the incoming request URL (works in both prod and local)
+    const origins = [];
+
+    // Primary: use the actual request origin (correct in prod + local)
+    if (context?.request?.url) {
+        const reqOrigin = new URL(context.request.url).origin;
+        origins.push(reqOrigin);
     }
 
-    // Local dev fallback — fetch from the static server directly.
-    const origins = ["http://localhost:8888", "http://localhost:3999"];
+    // Local dev fallbacks
+    origins.push("http://localhost:8888");
+    origins.push("http://localhost:3999");
 
     for (const origin of origins) {
         try {
             const res = await fetch(`${origin}${TEMPLATE_URL_PATH}`);
             if (res.ok) return res;
         } catch (_) {
-            // try next
+            // try next origin
         }
     }
 
