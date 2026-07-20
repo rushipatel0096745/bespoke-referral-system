@@ -123,29 +123,30 @@
             </div>
             <button class="btn" id="loginBtn" onclick="handleLogin()">Sign in</button>
         </div>
-
         <script>
-            // const SUPABASE_URL = "https://aebrzrvzgusrqwbwdbgi.supabase.co";
-            // const SUPABASE_ANON_KEY =
-            //     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ";
+            let db;
+            const initPromise = (async () => {
+                try {
+                    const res = await fetch("/api/config");
+                    const { supabaseUrl, supabaseKey } = await res.json();
+                    const { createClient } = supabase;
+                    db = createClient(supabaseUrl, supabaseKey);
 
-
-            const res = await fetch('/api/config');
-            const { supabaseUrl, supabaseKey } = await res.json();
-
-            const { createClient } = supabase;
-            // const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const db = createClient(supabaseUrl, supabaseKey);
-
-            db.auth.getSession().then(({ data }) => {
-                if (data.session) window.location.href = "/hub/dashboard.html";
-            });
+                    const { data } = await db.auth.getSession();
+                    if (data.session) window.location.href = "/hub/dashboard.html";
+                } catch (err) {
+                    console.error("Failed to initialize Supabase:", err);
+                }
+            })();
 
             document.getElementById("password").addEventListener("keydown", (e) => {
-                if (e.key === "Enter") handleLogin();
+                if (e.key === "Enter") {
+                    handleLogin();
+                }
             });
 
             async function handleLogin() {
+                await initPromise;
                 const email = document.getElementById("email").value.trim();
                 const password = document.getElementById("password").value;
                 const btn = document.getElementById("loginBtn");

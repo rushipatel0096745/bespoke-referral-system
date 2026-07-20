@@ -346,70 +346,72 @@
         </div>
 
         <script>
-            //   const SUPABASE_URL = "https://aebrzrvzgusrqwbwdbgi.supabase.co";
-            //           const SUPABASE_ANON_KEY =
-            //               "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ";
-            const COMMISSION_RATE = 0.20;
+            const COMMISSION_RATE = 0.2;
+            let db;
+            const initPromise = (async () => {
+                try {
+                    const res = await fetch("/api/config");
+                    const { supabaseUrl, supabaseKey } = await res.json();
+                    const { createClient } = supabase;
+                    db = createClient(supabaseUrl, supabaseKey);
 
-            const res = await fetch('/api/config');
-            const { supabaseUrl, supabaseKey } = await res.json();
-
-
-            const { createClient } = supabase;
-            // const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            const db = createClient(supabaseUrl, supabaseKey);
-
-            // ── Auth guard ──────────────────────────────────────────────────────────
-            db.auth.getSession().then(async ({ data }) => {
-                if (!data.session) {
-                    window.location.href = "/hub/index.html";
-                  return;
+                    // ── Auth guard ──────────────────────────────────────────────────────────
+                    const { data } = await db.auth.getSession();
+                    if (!data.session) {
+                        window.location.href = "/hub/index.html";
+                        return;
+                    }
+                    await loadDashboard(data.session);
+                } catch (err) {
+                    console.error("Failed to initialize Supabase:", err);
+                    document.getElementById("loadingScreen").textContent =
+                        "Failed to initialize dashboard. Please try reloading the page.";
                 }
-                await loadDashboard(data.session);
-              });
+            })();
 
-              // ── Sign out ────────────────────────────────────────────────────────────
-              async function signOut() {
+            // ── Sign out ────────────────────────────────────────────────────────────
+            async function signOut() {
+                await initPromise;
                 await db.auth.signOut();
                 window.location.href = "/hub/index.html";
-              }
+            }
 
-              // ── Copy referral link ──────────────────────────────────────────────────
-              function copyLink() {
+            // ── Copy referral link ──────────────────────────────────────────────────
+            function copyLink() {
                 const url = document.getElementById("referralLink").textContent;
                 navigator.clipboard.writeText(url).then(() => {
-                  const btn = document.querySelector(".copy-btn");
-                  btn.textContent = "Copied!";
-                  setTimeout(() => btn.textContent = "Copy", 2000);
+                    const btn = document.querySelector(".copy-btn");
+                    btn.textContent = "Copied!";
+                    setTimeout(() => (btn.textContent = "Copy"), 2000);
                 });
-              }
+            }
 
-              // ── Load dashboard data ─────────────────────────────────────────────────
-              async function loadDashboard(session) {
+            // ── Load dashboard data ─────────────────────────────────────────────────
+            async function loadDashboard(session) {
                 // 1. Get referrer row
                 const { data: ref, error: refErr } = await db
-                  .from("referrer")
-                  .select("*")
-                  .eq("auth_user_id", session.user.id)
-                  .single();
+                    .from("referrer")
+                    .select("*")
+                    .eq("auth_user_id", session.user.id)
+                    .single();
 
                 if (refErr || !ref) {
-                  document.getElementById("loadingScreen").textContent =
-                    "No franchise account linked to this login. Please contact support.";
-                  return;
+                    document.getElementById("loadingScreen").textContent =
+                        "No franchise account linked to this login. Please contact support.";
+                    return;
                 }
 
                 // 2. Get commissions
                 const { data: comms, error: commErr } = await db
-                  .from("commission")
-                  .select("*")
-                  .eq("referrer_ref", ref.stripe_ref)
-                  .order("created_at", { ascending: false });
+                    .from("commission")
+                    .select("*")
+                    .eq("referrer_ref", ref.stripe_ref)
+                    .order("created_at", { ascending: false });
 
                 if (commErr) {
-                  document.getElementById("loadingScreen").textContent =
-                    "Could not load commissions: " + commErr.message;
-                  return;
+                    document.getElementById("loadingScreen").textContent =
+                        "Could not load commissions: " + commErr.message;
+                    return;
                 }
 
                 const commissions = comms || [];
@@ -422,124 +424,135 @@
 
                 document.getElementById("loadingScreen").style.display = "none";
                 document.getElementById("app").style.display = "block";
-              }
+            }
 
-              // ── Header ──────────────────────────────────────────────────────────────
-              function renderHeader(ref) {
+            // ── Header ──────────────────────────────────────────────────────────────
+            function renderHeader(ref) {
                 document.getElementById("greeting").textContent = "Hi, " + ref.name;
                 document.title = ref.name + " | Franchise Hub";
                 const origin = window.location.origin;
-                document.getElementById("referralLink").textContent =
-                  origin + "/memory-catcher/" + ref.slug;
-              }
+                document.getElementById("referralLink").textContent = origin + "/memory-catcher/" + ref.slug;
+            }
 
-              // ── Stats ───────────────────────────────────────────────────────────────
-              function renderStats(commissions) {
+            // ── Stats ───────────────────────────────────────────────────────────────
+            function renderStats(commissions) {
                 const totalPence = commissions.reduce((s, c) => s + (c.amount_total || 0), 0);
                 const totalEarned = totalPence * COMMISSION_RATE;
 
                 const now = new Date();
-                const thisMonth = commissions.filter(c => {
-                  const d = new Date(c.created_at);
-                  return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                const thisMonth = commissions.filter((c) => {
+                    const d = new Date(c.created_at);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 });
                 const monthPence = thisMonth.reduce((s, c) => s + (c.amount_total || 0), 0);
                 const monthEarned = monthPence * COMMISSION_RATE;
 
-                document.getElementById("statTotalEarned").textContent  = fmt(totalEarned);
-                document.getElementById("statMonthEarned").textContent  = fmt(monthEarned);
-                document.getElementById("statTotalOrders").textContent  = commissions.length;
-                document.getElementById("statMonthOrders").textContent  =
-                  thisMonth.length + " order" + (thisMonth.length !== 1 ? "s" : "") + " this month";
-              }
+                document.getElementById("statTotalEarned").textContent = fmt(totalEarned);
+                document.getElementById("statMonthEarned").textContent = fmt(monthEarned);
+                document.getElementById("statTotalOrders").textContent = commissions.length;
+                document.getElementById("statMonthOrders").textContent =
+                    thisMonth.length + " order" + (thisMonth.length !== 1 ? "s" : "") + " this month";
+            }
 
-              // ── Chart ───────────────────────────────────────────────────────────────
-              function renderChart(commissions) {
+            // ── Chart ───────────────────────────────────────────────────────────────
+            function renderChart(commissions) {
                 if (commissions.length === 0) return;
 
                 const map = {};
-                commissions.forEach(c => {
-                  const d   = new Date(c.created_at);
-                  const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
-                  const lbl = d.toLocaleString("default", { month: "short", year: "2-digit" });
-                  if (!map[key]) map[key] = { label: lbl, earned: 0 };
-                  map[key].earned += (c.amount_total || 0) * COMMISSION_RATE;
+                commissions.forEach((c) => {
+                    const d = new Date(c.created_at);
+                    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                    const lbl = d.toLocaleString("default", { month: "short", year: "2-digit" });
+                    if (!map[key]) map[key] = { label: lbl, earned: 0 };
+                    map[key].earned += (c.amount_total || 0) * COMMISSION_RATE;
                 });
 
-                const sorted = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+                const sorted = Object.entries(map)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .slice(-6);
                 const labels = sorted.map(([, v]) => v.label);
                 const values = sorted.map(([, v]) => v.earned / 100);
 
                 document.getElementById("chartCard").style.display = "block";
                 new Chart(document.getElementById("earningsChart"), {
-                  type: "bar",
-                  data: {
-                    labels,
-                    datasets: [{
-                      data: values,
-                      backgroundColor: "#c9a84c",
-                      borderRadius: 4,
-                      borderSkipped: false,
-                    }],
-                  },
-                  options: {
-                    responsive: true,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: {
-                        callbacks: {
-                          label: ctx => "£" + ctx.parsed.y.toFixed(2) + " earned",
+                    type: "bar",
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                data: values,
+                                backgroundColor: "#c9a84c",
+                                borderRadius: 4,
+                                borderSkipped: false,
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => "£" + ctx.parsed.y.toFixed(2) + " earned",
+                                },
+                            },
                         },
-                      },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: "#aaa", font: { family: "sans-serif", size: 12 } },
+                            },
+                            y: {
+                                grid: { color: "#f0ebe3" },
+                                ticks: {
+                                    color: "#aaa",
+                                    font: { family: "sans-serif", size: 12 },
+                                    callback: (v) => "£" + v.toFixed(0),
+                                },
+                            },
+                        },
                     },
-                    scales: {
-                      x: { grid: { display: false }, ticks: { color: "#aaa", font: { family: "sans-serif", size: 12 } } },
-                      y: {
-                        grid: { color: "#f0ebe3" },
-                        ticks: { color: "#aaa", font: { family: "sans-serif", size: 12 }, callback: v => "£" + v.toFixed(0) },
-                      },
-                    },
-                  },
                 });
-              }
+            }
 
-              // ── Orders table ────────────────────────────────────────────────────────
-              function renderTable(commissions) {
-                document.getElementById("tableTitle").textContent =
-                  "Orders (" + commissions.length + ")";
+            // ── Orders table ────────────────────────────────────────────────────────
+            function renderTable(commissions) {
+                document.getElementById("tableTitle").textContent = "Orders (" + commissions.length + ")";
 
                 if (commissions.length === 0) {
-                  document.getElementById("emptyState").style.display = "block";
-                  return;
+                    document.getElementById("emptyState").style.display = "block";
+                    return;
                 }
 
                 const tbody = document.getElementById("ordersBody");
-                commissions.forEach(c => {
-                  const commission = (c.amount_total || 0) * COMMISSION_RATE;
-                  const tr = document.createElement("tr");
-                  tr.innerHTML = `
+                commissions.forEach((c) => {
+                    const commission = (c.amount_total || 0) * COMMISSION_RATE;
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
                     <td>${formatDate(c.created_at)}</td>
                     <td>${c.customer_email || "—"}</td>
                     <td>${fmt(c.amount_total || 0)}</td>
                     <td class="td-commission">${fmt(commission)}</td>
                     <td class="td-order-id">${c.order_id.slice(0, 22)}…</td>
                   `;
-                  tbody.appendChild(tr);
+                    tbody.appendChild(tr);
                 });
 
                 document.getElementById("ordersTable").style.display = "table";
-              }
+            }
 
-              // ── Helpers ──────────────────────────────────────────────────────────────
-              function fmt(pence) {
+            // ── Helpers ──────────────────────────────────────────────────────────────
+            function fmt(pence) {
                 return "£" + (pence / 100).toFixed(2);
-              }
+            }
 
-              function formatDate(iso) {
+            function formatDate(iso) {
                 return new Date(iso).toLocaleDateString("en-GB", {
-                  day: "numeric", month: "short", year: "numeric",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
                 });
-              }
+            }
         </script>
     </body>
 </html>
