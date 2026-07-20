@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Catcher™ Portal | Bespoke Foil Company</title>
+
+  <!-- Tabler icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Tokens ── */
+    :root {
+      --brand:        #c8a87a;
+      --brand-hover:  #b8976a;
+      --brand-light:  #f5ede0;
+      --surface-0:    #f7f5f2;
+      --surface-1:    #f0ece6;
+      --surface-2:    #ffffff;
+      --text-primary: #1a1714;
+      --text-secondary: #6b6460;
+      --text-muted:   #a09890;
+      --border:       rgba(0,0,0,0.09);
+      --border-strong:rgba(0,0,0,0.16);
+      --radius:       8px;
+      --success:      #2d7a52;
+      --success-bg:   #e6f4ed;
+      --danger:       #b83232;
+      --danger-bg:    #fdeaea;
+    }
+
+    /* ── Base ── */
+    html, body {
+      min-height: 100%;
+      background: var(--surface-0);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    input, button { font-family: inherit; font-size: inherit; }
+
+    /* ── Layout ── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ── Login screen ── */
+    #login-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      text-align: center;
+    }
+    #login-screen.active { display: flex; }
+
+    .login-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+    }
+    .login-logo i { font-size: 26px; color: #fff; }
+
+    .login-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .login-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .login-form {
+      width: 100%;
+      max-width: 320px;
+    }
+    .login-form input {
+      width: 100%;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .login-form input:focus { border-color: var(--brand); }
+    .login-form input::placeholder { color: var(--text-muted); }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: var(--brand-hover); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .login-err {
+      font-size: 13px;
+      color: var(--danger);
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ── Dashboard screen ── */
+    #dash-screen { display: none; }
+    #dash-screen.active { display: block; }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-top: 0.5rem;
+    }
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-dot i { font-size: 18px; color: #fff; }
+    .brand-text-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+    .brand-text-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: 20px;
+      padding: 5px 14px 5px 6px;
+    }
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--brand-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand-hover);
+      flex-shrink: 0;
+    }
+    .user-pill-name {
+      font-size: 13px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ── Referral link card ── */
+    .ref-card {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ref-url {
+      flex: 1;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--text-secondary);
+      background: var(--surface-0);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface-0);
+      padding: 8px 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { background: var(--surface-1); }
+
+    /* ── Stat cards ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 1.75rem;
+    }
+    .stat-card {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 8px;
+    }
+    .stat-label i { font-size: 14px; }
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* ── Payout card ── */
+    .payout-card {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .payout-title {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+    .payout-amount {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .payout-note {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .payout-btn {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 11px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .payout-btn:hover { background: var(--brand-hover); }
+
+    /* ── Orders table ── */
+    .table-wrap {
+      background: var(--surface-2);
+      border: 0.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.75rem;
+    }
+    .table-wrap table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+    .table-wrap th {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 16px;
+      background: var(--surface-0);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .table-wrap td {
+      padding: 11px 16px;
+      color: var(--text-primary);
+      border-bottom: 0.5px solid var(--border);
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .table-wrap tr:last-child td { border-bottom: none; }
+    .td-muted { font-size: 12px; color: var(--text-secondary); }
+    .td-commission { color: var(--success); font-weight: 600; }
+    .empty-row td {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 28px 16px !important;
+      font-size: 13px;
+    }
+
+    /* ── Bar chart ── */
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+    .bar-month {
+      font-size: 12px;
+      color: var(--text-secondary);
+      width: 28px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .bar-track {
+      flex: 1;
+      height: 9px;
+      background: var(--surface-1);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 5px;
+      background: var(--brand);
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .bar-val {
+      font-size: 12px;
+      color: var(--text-muted);
+      width: 46px;
+      flex-shrink: 0;
+      text-align: right;
+    }
+
+    /* ── Footer ── */
+    .footer-row {
+      text-align: center;
+      padding-top: 1.5rem;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s;
+    }
+    .logout-btn:hover { color: var(--text-secondary); }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .payout-card { flex-direction: column; align-items: flex-start; }
+      .payout-btn { width: 100%; justify-content: center; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="container">
+
+    <!-- ══════════════════════════════
+         LOGIN SCREEN
+    ══════════════════════════════ -->
+    <div id="login-screen">
+      <div class="login-logo">
+        <i class="ti ti-sparkles" aria-hidden="true"></i>
+      </div>
+      <div class="login-title">Memory Catcher™ portal</div>
+      <div class="login-sub">Sign in to view your commissions</div>
+      <div class="login-form">
+        <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email" />
+        <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" />
+        <button class="btn-primary" id="login-btn">Sign in</button>
+        <div class="login-err" id="login-err">Incorrect email or password. Try again.</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         DASHBOARD SCREEN
+    ══════════════════════════════ -->
+    <div id="dash-screen">
+
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="brand-mark">
+          <div class="brand-dot"><i class="ti ti-sparkles" aria-hidden="true"></i></div>
+          <div>
+            <div class="brand-text-name">Memory Catcher™</div>
+            <div class="brand-text-sub">Bespoke Foil Company</div>
+          </div>
+        </div>
+        <div class="user-pill">
+          <div class="avatar" id="user-initials">—</div>
+          <span class="user-pill-name" id="user-name">—</span>
+        </div>
+      </div>
+
+      <!-- Referral link -->
+      <div class="section-label">your referral link</div>
+      <div class="ref-card">
+        <div class="ref-url" id="ref-url">thebespokefoilcompany.co.uk/ref/…</div>
+        <button class="copy-btn" id="copy-btn" aria-label="Copy referral link">
+          <i class="ti ti-copy" aria-hidden="true"></i>Copy
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div class="section-label">this month</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-currency-pound" aria-hidden="true"></i>Commissions earned</div>
+          <div class="stat-value" id="stat-commission">—</div>
+          <div class="stat-sub">20% of order value</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-shopping-bag" aria-hidden="true"></i>Orders</div>
+          <div class="stat-value" id="stat-orders">—</div>
+          <div class="stat-sub">via your link</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-receipt" aria-hidden="true"></i>Avg order value</div>
+          <div class="stat-value" id="stat-avg">—</div>
+          <div class="stat-sub">per referral</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"><i class="ti ti-chart-bar" aria-hidden="true"></i>All-time earned</div>
+          <div class="stat-value" id="stat-alltime">—</div>
+          <div class="stat-sub">total commissions</div>
+        </div>
+      </div>
+
+      <!-- Payout -->
+      <div class="payout-card">
+        <div>
+          <div class="payout-title">All-time commissions</div>
+          <div class="payout-amount" id="payout-amount">—</div>
+          <div class="payout-note">Contact Ashley to arrange a payout</div>
+        </div>
+        <button class="payout-btn" id="payout-btn">
+          <i class="ti ti-mail" aria-hidden="true"></i>Request payout
+        </button>
+      </div>
+
+      <!-- Orders table -->
+      <div class="section-label">recent orders</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%">Customer email</th>
+              <th style="width:20%">Order total</th>
+              <th style="width:20%">Your 20%</th>
+              <th style="width:20%">Date</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr class="empty-row"><td colspan="4">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Earnings chart -->
+      <div class="section-label">earnings by month</div>
+      <div id="earnings-chart" style="margin-bottom:2rem"></div>
+
+      <!-- Sign out -->
+      <div class="footer-row">
+        <button class="logout-btn" id="logout-btn">
+          <i class="ti ti-logout" aria-hidden="true"></i>Sign out
+        </button>
+      </div>
+
+    </div><!-- /#dash-screen -->
+  </div><!-- /.container -->
+</div><!-- /.page -->
+
+<script>
+  /* ─────────────────────────────────────────────
+     CONFIG — swap these two values before deploy
+  ───────────────────────────────────────────── */
+  const SUPABASE_URL      = 'https://aebrzrvzgusrqwbwdbgi.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ';
+  const COMMISSION_RATE   = 0.20;
+  const PAYOUT_EMAIL      = 'hello@thebespokefoilcompany.co.uk';
+
+  /* ── Init Supabase ── */
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* ── Screen helpers ── */
+  function showLogin() {
+    document.getElementById('login-screen').classList.add('active');
+    document.getElementById('dash-screen').classList.remove('active');
+  }
+  function showDash() {
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('dash-screen').classList.add('active');
+  }
+
+  /* ── Formatters ── */
+  function fmt(pence) {
+    return '£' + (pence / 100).toFixed(2);
+  }
+  function escHtml(s) {
+    return String(s || '—').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+  }
+
+  /* ── Bootstrap ── */
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      await loadDash(session.user);
+    } else {
+      showLogin();
+    }
+  }
+
+  /* ── Login ── */
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const btn    = document.getElementById('login-btn');
+    const email  = document.getElementById('email-input').value.trim();
+    const pw     = document.getElementById('pw-input').value;
+    const errEl  = document.getElementById('login-err');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+
+    if (error) { errEl.style.display = 'block'; return; }
+    await loadDash(data.user);
+  });
+
+  /* Allow Enter key in login form */
+  ['email-input', 'pw-input'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('login-btn').click();
+    });
+  });
+
+  /* ── Sign out ── */
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    showLogin();
+  });
+
+  /* ── Copy referral link ── */
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const url = 'https://' + document.getElementById('ref-url').textContent;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>Copied!';
+      btn.style.color = 'var(--success)';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="ti ti-copy" aria-hidden="true"></i>Copy';
+        btn.style.color = '';
+      }, 2000);
+    });
+  });
+
+  /* ── Payout request (mailto) ── */
+  document.getElementById('payout-btn').addEventListener('click', () => {
+    const amount  = document.getElementById('payout-amount').textContent;
+    const name    = document.getElementById('user-name').textContent;
+    const subject = encodeURIComponent('Commission payout request');
+    const body    = encodeURIComponent(
+      `Hi Ashley,\n\nI'd like to request my commission payout of ${amount}.\n\nThanks,\n${name}`
+    );
+    window.location.href = `mailto:${PAYOUT_EMAIL}?subject=${subject}&body=${body}`;
+  });
+
+  /* ── Load dashboard data ── */
+  async function loadDash(user) {
+    showDash();
+
+    /* 1. Fetch referrer profile */
+    const { data: referrer, error: refErr } = await sb
+      .from('referrer')
+      .select('slug, name, stripe_ref')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (refErr || !referrer) {
+      document.getElementById('orders-body').innerHTML =
+        '<tr class="empty-row"><td colspan="4" style="color:var(--danger)">No referrer profile found for this account. Contact Ashley.</td></tr>';
+      return;
+    }
+
+    /* Populate header */
+    const initials = referrer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    document.getElementById('user-name').textContent     = referrer.name;
+    document.getElementById('user-initials').textContent = initials;
+    document.getElementById('ref-url').textContent =
+      `thebespokefoilcompany.co.uk/ref/${referrer.slug}`;
+
+    /* 2. Fetch all commissions for this referrer */
+    const { data: commissions } = await sb
+      .from('commission')
+      .select('order_id, amount_total, currency, customer_email, created_at')
+      .eq('referrer_ref', referrer.stripe_ref)
+      .order('created_at', { ascending: false });
+
+    const all = commissions || [];
+
+    /* This-month slice */
+    const now        = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisMonth  = all.filter(c => new Date(c.created_at) >= monthStart);
+
+    /* Stat calculations (amount_total is integer pence) */
+    const monthTotal  = thisMonth.reduce((s, c) => s + c.amount_total, 0);
+    const allTotal    = all.reduce((s, c) => s + c.amount_total, 0);
+    const monthComm   = Math.round(monthTotal * COMMISSION_RATE);
+    const allComm     = Math.round(allTotal   * COMMISSION_RATE);
+    const avgOrder    = thisMonth.length ? Math.round(monthTotal / thisMonth.length) : 0;
+
+    document.getElementById('stat-commission').textContent = fmt(monthComm);
+    document.getElementById('stat-orders').textContent     = thisMonth.length;
+    document.getElementById('stat-avg').textContent        = thisMonth.length ? fmt(avgOrder) : '—';
+    document.getElementById('stat-alltime').textContent    = fmt(allComm);
+    document.getElementById('payout-amount').textContent   = fmt(allComm);
+
+    renderOrders(all.slice(0, 8));
+    renderChart(all);
+  }
+
+  /* ── Orders table ── */
+  function renderOrders(orders) {
+    const body = document.getElementById('orders-body');
+    if (!orders.length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="4">No orders yet — share your link to get started</td></tr>';
+      return;
+    }
+    body.innerHTML = orders.map(o => {
+      const comm = Math.round(o.amount_total * COMMISSION_RATE);
+      const date = new Date(o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+      return `<tr>
+        <td class="td-muted">${escHtml(o.customer_email)}</td>
+        <td>${fmt(o.amount_total)}</td>
+        <td class="td-commission">${fmt(comm)}</td>
+        <td class="td-muted">${date}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── Monthly bar chart ── */
+  function renderChart(all) {
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - i);
+      months.push({
+        label: d.toLocaleString('default', { month: 'short' }),
+        year:  d.getFullYear(),
+        month: d.getMonth(),
+      });
+    }
+
+    const totals = months.map(m =>
+      all
+        .filter(c => {
+          const d = new Date(c.created_at);
+          return d.getFullYear() === m.year && d.getMonth() === m.month;
+        })
+        .reduce((s, c) => s + Math.round(c.amount_total * COMMISSION_RATE), 0)
+    );
+
+    const max = Math.max(...totals, 1);
+
+    document.getElementById('earnings-chart').innerHTML = months.map((m, i) => `
+      <div class="bar-row">
+        <span class="bar-month">${m.label}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${Math.round((totals[i] / max) * 100)}%"></div>
+        </div>
+        <span class="bar-val">${fmt(totals[i])}</span>
+      </div>
+    `).join('');
+  }
+
+  /* ── Go ── */
+  init();
+</script>
+</body>
+</html>

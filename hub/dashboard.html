@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Franchise Hub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body { font-family: Georgia, serif; background: #f9f6f1; color: #1a1a1a; min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      background: #1a1a1a;
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { color: #c9a84c; font-size: 18px; font-weight: bold; }
+    .header-title {
+      color: #fff; font-family: sans-serif; font-size: 13px;
+      letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.6;
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .greeting { color: #fff; font-family: sans-serif; font-size: 14px; opacity: 0.8; }
+    .sign-out-btn {
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .sign-out-btn:hover { border-color: rgba(255,255,255,0.6); }
+
+    /* ── MAIN ── */
+    main { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ── REFERRAL LINK BOX ── */
+    .link-box {
+      background: #fff;
+      border: 1px solid #e8e3da;
+      border-radius: 10px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .link-label {
+      font-family: sans-serif; font-size: 11px; font-weight: 600;
+      color: #999; text-transform: uppercase; letter-spacing: 0.1em; flex-shrink: 0;
+    }
+    .link-url { font-family: monospace; font-size: 13px; color: #1a1a1a; flex: 1; word-break: break-all; }
+    .copy-btn {
+      background: #c9a84c; border: none; color: #1a1a1a;
+      font-family: sans-serif; font-size: 12px; font-weight: 700;
+      padding: 6px 14px; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .copy-btn:hover { opacity: 0.85; }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #e8e3da;
+      border-radius: 12px;
+      padding: 24px 20px;
+    }
+    .stat-card.dark { background: #1a1a1a; border: none; }
+    .stat-label {
+      font-family: sans-serif; font-size: 11px; font-weight: 600;
+      color: #999; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px;
+    }
+    .stat-card.dark .stat-label { color: #c9a84c; }
+    .stat-value { font-size: 32px; font-weight: normal; color: #1a1a1a; margin-bottom: 6px; line-height: 1; }
+    .stat-card.dark .stat-value { color: #fff; }
+    .stat-sub { font-family: sans-serif; font-size: 12px; color: #bbb; }
+
+    /* ── CHART ── */
+    .chart-card {
+      background: #fff;
+      border: 1px solid #e8e3da;
+      border-radius: 12px;
+      padding: 24px 20px;
+      margin-bottom: 28px;
+    }
+    .card-title {
+      font-family: sans-serif; font-size: 11px; font-weight: 600;
+      color: #999; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px;
+    }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: #fff;
+      border: 1px solid #e8e3da;
+      border-radius: 12px;
+      padding: 24px 20px;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 14px; }
+    th {
+      text-align: left; padding: 8px 12px;
+      font-size: 11px; font-weight: 600; color: #bbb;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      border-bottom: 1px solid #f0ebe3; white-space: nowrap;
+    }
+    td { padding: 12px; color: #333; border-bottom: 1px solid #f9f6f1; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(odd) td { background: #fdfcfa; }
+    .td-commission { color: #c9a84c; font-weight: 600; }
+    .td-order-id { font-family: monospace; font-size: 12px; color: #ccc; }
+
+    /* ── EMPTY / LOADING / ERROR ── */
+    .empty {
+      text-align: center; padding: 40px 20px;
+      font-family: sans-serif; font-size: 14px; color: #bbb;
+    }
+    .loading-screen {
+      min-height: 100vh; display: flex; align-items: center;
+      justify-content: center; font-family: sans-serif; color: #aaa; font-size: 15px;
+    }
+
+    @media (max-width: 520px) {
+      header { padding: 0 16px; }
+      main { padding: 20px 16px; }
+      .greeting { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="loading-screen" id="loadingScreen">Loading your dashboard…</div>
+
+  <div id="app" style="display:none">
+    <header>
+      <div class="header-left">
+        <span class="logo">✦ BFC</span>
+        <span class="header-title">Franchise Hub</span>
+      </div>
+      <div class="header-right">
+        <span class="greeting" id="greeting"></span>
+        <button class="sign-out-btn" onclick="signOut()">Sign out</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Referral link -->
+      <div class="link-box">
+        <span class="link-label">Your referral link</span>
+        <span class="link-url" id="referralLink"></span>
+        <button class="copy-btn" onclick="copyLink()">Copy</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card dark">
+          <div class="stat-label">Total earned</div>
+          <div class="stat-value" id="statTotalEarned">£0.00</div>
+          <div class="stat-sub">All time (20% commission)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">This month</div>
+          <div class="stat-value" id="statMonthEarned">£0.00</div>
+          <div class="stat-sub" id="statMonthOrders">0 orders this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total orders</div>
+          <div class="stat-value" id="statTotalOrders">0</div>
+          <div class="stat-sub">All time</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-card" id="chartCard" style="display:none">
+        <div class="card-title">Monthly earnings</div>
+        <canvas id="earningsChart" height="90"></canvas>
+      </div>
+
+      <!-- Orders table -->
+      <div class="table-card">
+        <div class="card-title" id="tableTitle">Orders</div>
+        <div class="table-wrap">
+          <table id="ordersTable" style="display:none">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Order total</th>
+                <th>Your commission</th>
+                <th>Order ID</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+          <div class="empty" id="emptyState" style="display:none">
+            No orders yet — share your referral link to start earning!
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    const COMMISSION_RATE = 0.20;
+
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ── Auth guard ──────────────────────────────────────────────────────────
+    db.auth.getSession().then(async ({ data }) => {
+      if (!data.session) {
+        window.location.href = "/hub/index.html";
+        return;
+      }
+      await loadDashboard(data.session);
+    });
+
+    // ── Sign out ────────────────────────────────────────────────────────────
+    async function signOut() {
+      await db.auth.signOut();
+      window.location.href = "/hub/index.html";
+    }
+
+    // ── Copy referral link ──────────────────────────────────────────────────
+    function copyLink() {
+      const url = document.getElementById("referralLink").textContent;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.querySelector(".copy-btn");
+        btn.textContent = "Copied!";
+        setTimeout(() => btn.textContent = "Copy", 2000);
+      });
+    }
+
+    // ── Load dashboard data ─────────────────────────────────────────────────
+    async function loadDashboard(session) {
+      // 1. Get referrer row
+      const { data: ref, error: refErr } = await db
+        .from("referrer")
+        .select("*")
+        .eq("auth_user_id", session.user.id)
+        .single();
+
+      if (refErr || !ref) {
+        document.getElementById("loadingScreen").textContent =
+          "No franchise account linked to this login. Please contact support.";
+        return;
+      }
+
+      // 2. Get commissions
+      const { data: comms, error: commErr } = await db
+        .from("commission")
+        .select("*")
+        .eq("referrer_ref", ref.stripe_ref)
+        .order("created_at", { ascending: false });
+
+      if (commErr) {
+        document.getElementById("loadingScreen").textContent =
+          "Could not load commissions: " + commErr.message;
+        return;
+      }
+
+      const commissions = comms || [];
+
+      // 3. Render
+      renderHeader(ref);
+      renderStats(commissions);
+      renderChart(commissions);
+      renderTable(commissions);
+
+      document.getElementById("loadingScreen").style.display = "none";
+      document.getElementById("app").style.display = "block";
+    }
+
+    // ── Header ──────────────────────────────────────────────────────────────
+    function renderHeader(ref) {
+      document.getElementById("greeting").textContent = "Hi, " + ref.name;
+      document.title = ref.name + " | Franchise Hub";
+      const origin = window.location.origin;
+      document.getElementById("referralLink").textContent =
+        origin + "/memory-catcher/" + ref.slug;
+    }
+
+    // ── Stats ───────────────────────────────────────────────────────────────
+    function renderStats(commissions) {
+      const totalPence = commissions.reduce((s, c) => s + (c.amount_total || 0), 0);
+      const totalEarned = totalPence * COMMISSION_RATE;
+
+      const now = new Date();
+      const thisMonth = commissions.filter(c => {
+        const d = new Date(c.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      });
+      const monthPence = thisMonth.reduce((s, c) => s + (c.amount_total || 0), 0);
+      const monthEarned = monthPence * COMMISSION_RATE;
+
+      document.getElementById("statTotalEarned").textContent  = fmt(totalEarned);
+      document.getElementById("statMonthEarned").textContent  = fmt(monthEarned);
+      document.getElementById("statTotalOrders").textContent  = commissions.length;
+      document.getElementById("statMonthOrders").textContent  =
+        thisMonth.length + " order" + (thisMonth.length !== 1 ? "s" : "") + " this month";
+    }
+
+    // ── Chart ───────────────────────────────────────────────────────────────
+    function renderChart(commissions) {
+      if (commissions.length === 0) return;
+
+      const map = {};
+      commissions.forEach(c => {
+        const d   = new Date(c.created_at);
+        const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+        const lbl = d.toLocaleString("default", { month: "short", year: "2-digit" });
+        if (!map[key]) map[key] = { label: lbl, earned: 0 };
+        map[key].earned += (c.amount_total || 0) * COMMISSION_RATE;
+      });
+
+      const sorted = Object.entries(map).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+      const labels = sorted.map(([, v]) => v.label);
+      const values = sorted.map(([, v]) => v.earned / 100);
+
+      document.getElementById("chartCard").style.display = "block";
+      new Chart(document.getElementById("earningsChart"), {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: "#c9a84c",
+            borderRadius: 4,
+            borderSkipped: false,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => "£" + ctx.parsed.y.toFixed(2) + " earned",
+              },
+            },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: "#aaa", font: { family: "sans-serif", size: 12 } } },
+            y: {
+              grid: { color: "#f0ebe3" },
+              ticks: { color: "#aaa", font: { family: "sans-serif", size: 12 }, callback: v => "£" + v.toFixed(0) },
+            },
+          },
+        },
+      });
+    }
+
+    // ── Orders table ────────────────────────────────────────────────────────
+    function renderTable(commissions) {
+      document.getElementById("tableTitle").textContent =
+        "Orders (" + commissions.length + ")";
+
+      if (commissions.length === 0) {
+        document.getElementById("emptyState").style.display = "block";
+        return;
+      }
+
+      const tbody = document.getElementById("ordersBody");
+      commissions.forEach(c => {
+        const commission = (c.amount_total || 0) * COMMISSION_RATE;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${formatDate(c.created_at)}</td>
+          <td>${c.customer_email || "—"}</td>
+          <td>${fmt(c.amount_total || 0)}</td>
+          <td class="td-commission">${fmt(commission)}</td>
+          <td class="td-order-id">${c.order_id.slice(0, 22)}…</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("ordersTable").style.display = "table";
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function fmt(pence) {
+      return "£" + (pence / 100).toFixed(2);
+    }
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString("en-GB", {
+        day: "numeric", month: "short", year: "numeric",
+      });
+    }
+  </script>
+</body>
+</html>

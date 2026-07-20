@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Franchise Hub | Bespoke Foil Company</title>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: Georgia, serif;
+                background: #1a1a1a;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+            }
+            .card {
+                background: #fff;
+                border-radius: 16px;
+                padding: 48px 40px;
+                width: 100%;
+                max-width: 400px;
+                box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+            }
+            .logo {
+                color: #c9a84c;
+                font-size: 22px;
+                font-weight: bold;
+                margin-bottom: 16px;
+                letter-spacing: 0.1em;
+            }
+            h1 {
+                font-size: 26px;
+                font-weight: normal;
+                margin-bottom: 8px;
+                color: #1a1a1a;
+            }
+            .sub {
+                font-family: sans-serif;
+                font-size: 14px;
+                color: #888;
+                margin-bottom: 32px;
+            }
+            .error {
+                background: #fef2f2;
+                border: 1px solid #fca5a5;
+                border-radius: 8px;
+                padding: 10px 14px;
+                font-family: sans-serif;
+                font-size: 13px;
+                color: #dc2626;
+                margin-bottom: 20px;
+                display: none;
+            }
+            .field {
+                margin-bottom: 18px;
+            }
+            label {
+                display: block;
+                font-family: sans-serif;
+                font-size: 13px;
+                font-weight: 600;
+                color: #444;
+                margin-bottom: 6px;
+            }
+            input {
+                width: 100%;
+                padding: 11px 14px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-family: sans-serif;
+                font-size: 14px;
+                outline: none;
+                background: #fafafa;
+            }
+            input:focus {
+                border-color: #c9a84c;
+            }
+            .btn {
+                width: 100%;
+                padding: 13px;
+                background: #c9a84c;
+                color: #1a1a1a;
+                border: none;
+                border-radius: 8px;
+                font-family: sans-serif;
+                font-size: 15px;
+                font-weight: 700;
+                cursor: pointer;
+                margin-top: 8px;
+                transition: opacity 0.15s;
+            }
+            .btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .btn:hover:not(:disabled) {
+                opacity: 0.88;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="logo">✦ BFC</div>
+            <h1>Franchise Hub</h1>
+            <p class="sub">Sign in to view your earnings and orders</p>
+            <div class="error" id="error"></div>
+            <div class="field">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="you@example.com" autocomplete="email" />
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+            </div>
+            <button class="btn" id="loginBtn" onclick="handleLogin()">Sign in</button>
+        </div>
+
+        <script>
+            const SUPABASE_URL = "https://aebrzrvzgusrqwbwdbgi.supabase.co";
+            const SUPABASE_ANON_KEY =
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlYnJ6cnZ6Z3VzcnF3YndkYmdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MDg1MzgsImV4cCI6MjEwMDA4NDUzOH0.f6cN-ev6kN6mVywinqZ5NJEx1SWQbnlYtXLm48umUOQ";
+
+            const { createClient } = supabase;
+            const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            db.auth.getSession().then(({ data }) => {
+                if (data.session) window.location.href = "/hub/dashboard.html";
+            });
+
+            document.getElementById("password").addEventListener("keydown", (e) => {
+                if (e.key === "Enter") handleLogin();
+            });
+
+            async function handleLogin() {
+                const email = document.getElementById("email").value.trim();
+                const password = document.getElementById("password").value;
+                const btn = document.getElementById("loginBtn");
+
+                document.getElementById("error").style.display = "none";
+
+                if (!email || !password) {
+                    showError("Please enter your email and password.");
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.textContent = "Signing in…";
+
+                const { error } = await db.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    showError(error.message);
+                    btn.disabled = false;
+                    btn.textContent = "Sign in";
+                    return;
+                }
+
+                window.location.href = "/hub/dashboard.html";
+            }
+
+            function showError(msg) {
+                const el = document.getElementById("error");
+                el.textContent = msg;
+                el.style.display = "block";
+            }
+        </script>
+    </body>
+</html>
