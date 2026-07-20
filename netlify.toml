@@ -1,0 +1,23 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Edge functions are auto-detected from netlify/edge-functions/
+# The path binding is declared inside memory-catcher.js via config.path
+# so no [[edge_functions]] block is needed here.
+
+# Preserve raw body for Stripe webhook signature verification
+[functions."stripe-webhook"]
+  included_files = []
+
+# Redirect unknown pages to our-kit (safety net)
+[[redirects]]
+  from = "/our-kit"
+  to = "/our-kit.html"
+  status = 200
+
+# Serve shared JS files
+[[headers]]
+  for = "/shared/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

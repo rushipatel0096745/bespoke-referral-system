@@ -1,0 +1,34 @@
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+.env.production
+
+# ─── Node.js ──────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json     # optional: remove this line if you want to commit the lockfile
+
+# ─── Netlify ──────────────────────────────────────────────────────────────────
+.netlify/
+netlify/functions/.cache/
+
+# ─── Data / Runtime files ─────────────────────────────────────────────────────
+data/*.json           # generated referrer registry snapshots, if any
+data/*.log
+
+# ─── OS & Editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# ─── Build / Dist ─────────────────────────────────────────────────────────────
+dist/
+build/
+.cache/

@@ -1,0 +1,26 @@
+{
+  "salamata-bah": {
+    "name": "Salamata",
+    "photo": "/assets/mc-ashley.webp",
+    "offer": "Use the code below to receive a FREE extra copy of your print. Perfect for gifting to grandparents.",
+    "code": "SALAMATA",
+    "stripe_ref": "ref_salamata_bah",
+    "active": true
+  },
+  "ashley-eccleston": {
+    "name": "Ashley",
+    "photo": "/assets/mc-ashley-1000.webp",
+    "offer": "A little welcome gift from the original Memory Catcher.",
+    "code": "ASHLEY",
+    "stripe_ref": "ref_ashley_eccleston",
+    "active": true
+  },
+  "dixit": {
+    "name": "Dixit",
+    "photo": "/assets/mc-ashley.webp",
+    "offer": "Order through my link and I'll make sure you're looked after.",
+    "code": "DIXIT",
+    "stripe_ref": "ref_dixit",
+    "active": true
+  }
+}

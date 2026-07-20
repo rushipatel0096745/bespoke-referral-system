@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- Title is replaced dynamically by render-template.js -->
+        <title>Order Your Kit | Bespoke Foil Company</title>
+
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            :root {
+                --gold: #c9a84c;
+                --dark: #1a1a1a;
+                --mid: #3d3d3d;
+                --light: #f9f6f1;
+                --white: #ffffff;
+                --radius: 12px;
+                --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            }
+
+            body {
+                font-family: "Georgia", serif;
+                background: var(--light);
+                color: var(--dark);
+                min-height: 100vh;
+            }
+
+            /* ── HEADER ── */
+            header {
+                background: var(--dark);
+                padding: 18px 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            header .logo {
+                color: var(--gold);
+                font-size: 1.3rem;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                text-decoration: none;
+            }
+
+            /* ── HERO ── */
+            .hero {
+                background: var(--dark);
+                color: var(--white);
+                text-align: center;
+                padding: 56px 24px 48px;
+            }
+            .hero .tag {
+                display: inline-block;
+                background: var(--gold);
+                color: var(--dark);
+                font-size: 0.72rem;
+                font-family: sans-serif;
+                letter-spacing: 0.14em;
+                text-transform: uppercase;
+                padding: 4px 14px;
+                border-radius: 20px;
+                margin-bottom: 20px;
+            }
+            .hero h1 {
+                font-size: clamp(1.7rem, 5vw, 2.8rem);
+                font-weight: normal;
+                line-height: 1.25;
+                margin-bottom: 16px;
+            }
+            .hero h1 span {
+                color: var(--gold);
+            }
+            .hero p {
+                font-family: sans-serif;
+                font-size: 1rem;
+                color: #ccc;
+                max-width: 520px;
+                margin: 0 auto;
+                line-height: 1.6;
+            }
+
+            /* ── REFERRER CARD ── */
+            .referrer-section {
+                display: flex;
+                justify-content: center;
+                padding: 40px 24px 0;
+            }
+            .referrer-card {
+                background: var(--white);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+                padding: 28px 32px;
+                display: flex;
+                align-items: center;
+                gap: 24px;
+                max-width: 560px;
+                width: 100%;
+            }
+            .referrer-card img {
+                width: 72px;
+                height: 72px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid var(--gold);
+                flex-shrink: 0;
+                /* fallback if image 404s */
+                background: var(--light);
+            }
+            .referrer-card .info {
+                flex: 1;
+            }
+            .referrer-card .info .label {
+                font-family: sans-serif;
+                font-size: 0.72rem;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: var(--gold);
+                margin-bottom: 4px;
+            }
+            .referrer-card .info .name {
+                font-size: 1.25rem;
+                margin-bottom: 6px;
+            }
+            .referrer-card .info .offer-text {
+                font-family: sans-serif;
+                font-size: 0.88rem;
+                color: var(--mid);
+                line-height: 1.55;
+            }
+
+            /* ── OFFER CODE ── */
+            .code-section {
+                display: flex;
+                justify-content: center;
+                padding: 20px 24px 0;
+            }
+            .code-box {
+                background: var(--white);
+                border: 2px dashed var(--gold);
+                border-radius: var(--radius);
+                padding: 18px 28px;
+                text-align: center;
+                max-width: 560px;
+                width: 100%;
+            }
+            .code-box .code-label {
+                font-family: sans-serif;
+                font-size: 0.75rem;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                color: var(--mid);
+                margin-bottom: 8px;
+            }
+            .code-box .code-value {
+                font-family: "Courier New", monospace;
+                font-size: 1.6rem;
+                font-weight: bold;
+                color: var(--gold);
+                letter-spacing: 0.18em;
+            }
+            .code-box .code-note {
+                font-family: sans-serif;
+                font-size: 0.78rem;
+                color: #999;
+                margin-top: 6px;
+            }
+
+            /* ── PRODUCTS ── */
+            .products-section {
+                padding: 48px 24px;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+            .products-section h2 {
+                text-align: center;
+                font-size: 1.5rem;
+                font-weight: normal;
+                margin-bottom: 32px;
+            }
+            .products-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 20px;
+            }
+            .product-card {
+                background: var(--white);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+                padding: 28px 24px;
+                text-align: center;
+                transition:
+                    transform 0.18s ease,
+                    box-shadow 0.18s ease;
+            }
+            .product-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.13);
+            }
+            .product-card .kit-icon {
+                font-size: 2.2rem;
+                margin-bottom: 12px;
+            }
+            .product-card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 8px;
+            }
+            .product-card p {
+                font-family: sans-serif;
+                font-size: 0.84rem;
+                color: var(--mid);
+                line-height: 1.55;
+                margin-bottom: 20px;
+            }
+            .product-card .price {
+                font-family: sans-serif;
+                font-size: 1.25rem;
+                font-weight: 700;
+                color: var(--dark);
+                margin-bottom: 16px;
+            }
+            .btn-order {
+                display: inline-block;
+                background: var(--gold);
+                color: var(--dark);
+                font-family: sans-serif;
+                font-size: 0.84rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                padding: 12px 28px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                text-decoration: none;
+                transition:
+                    background 0.15s ease,
+                    opacity 0.15s ease;
+                width: 100%;
+            }
+            .btn-order:hover {
+                opacity: 0.88;
+            }
+            .btn-order:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            /* ── HOW IT WORKS ── */
+            .how-section {
+                background: var(--dark);
+                color: var(--white);
+                padding: 52px 24px;
+                text-align: center;
+            }
+            .how-section h2 {
+                font-size: 1.4rem;
+                font-weight: normal;
+                margin-bottom: 36px;
+            }
+            .steps {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 32px;
+                max-width: 780px;
+                margin: 0 auto;
+            }
+            .step {
+                flex: 1 1 180px;
+                max-width: 200px;
+            }
+            .step .num {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: var(--gold);
+                color: var(--dark);
+                font-family: sans-serif;
+                font-weight: 700;
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 12px;
+            }
+            .step p {
+                font-family: sans-serif;
+                font-size: 0.86rem;
+                color: #ccc;
+                line-height: 1.55;
+            }
+
+            /* ── FOOTER ── */
+            footer {
+                background: var(--dark);
+                border-top: 1px solid #333;
+                color: #888;
+                font-family: sans-serif;
+                font-size: 0.78rem;
+                text-align: center;
+                padding: 20px 24px;
+            }
+
+            /* ── TOAST ── */
+            #bfc-toast {
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%) translateY(80px);
+                background: var(--dark);
+                color: var(--white);
+                font-family: sans-serif;
+                font-size: 0.88rem;
+                padding: 12px 24px;
+                border-radius: 6px;
+                box-shadow: var(--shadow);
+                opacity: 0;
+                transition:
+                    opacity 0.25s ease,
+                    transform 0.25s ease;
+                z-index: 9999;
+                pointer-events: none;
+                white-space: nowrap;
+            }
+            #bfc-toast.show {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            @media (max-width: 480px) {
+                .referrer-card {
+                    flex-direction: column;
+                    text-align: center;
+                }
+                .products-grid {
+                    grid-template-columns: 1fr;
+                }
+                .steps {
+                    flex-direction: column;
+                    align-items: center;
+                }
+            }
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <a class="logo" href="/">The Bespoke Foil Company</a>
+        </header>
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="tag">Exclusive referral offer</div>
+            <h1>Your <span id="hero-name">Memory Catcher</span><br />has a gift for you</h1>
+            <p>A hand-crafted foil keepsake of your baby's first print — treasured forever.</p>
+        </section>
+
+        <!-- REFERRER CARD -->
+        <section class="referrer-section">
+            <div class="referrer-card">
+                <img id="mc-photo" src="/assets/mc-ashley.webp" alt="Memory Catcher photo" />
+                <div class="info">
+                    <div class="label">Referred by</div>
+                    <div class="name" id="mc-name">Your Memory Catcher</div>
+                    <div class="offer-text" id="mc-offer"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- OFFER CODE (hidden if no code) -->
+        <section class="code-section" id="code-section" style="display: none">
+            <div class="code-box">
+                <div class="code-label">Your exclusive code</div>
+                <div class="code-value" id="mc-code"></div>
+                <div class="code-note">Applied automatically at checkout</div>
+            </div>
+        </section>
+
+        <!-- PRODUCTS -->
+        <section class="products-section">
+            <h2>Choose your kit</h2>
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="kit-icon">🖐️</div>
+                    <h3>Foil Print Kit</h3>
+                    <p>Classic gold or silver foil impression of your baby's hand or foot. Timeless and simple.</p>
+                    <div class="price">£29</div>
+                    <button class="btn-order" onclick="order('foil', 2900)">Order Now</button>
+                </div>
+
+                <div class="product-card">
+                    <div class="kit-icon">🖼️</div>
+                    <h3>Framed Kit</h3>
+                    <p>The foil print beautifully framed and ready to hang. No extra effort needed.</p>
+                    <div class="price">£49</div>
+                    <button class="btn-order" onclick="order('framed', 4900)">Order Now</button>
+                </div>
+
+                <div class="product-card">
+                    <div class="kit-icon">✨</div>
+                    <h3>Premium Kit</h3>
+                    <p>Our finest offering — framed print with personalised engraving and luxury packaging.</p>
+                    <div class="price">£79</div>
+                    <button class="btn-order" onclick="order('premium', 7900)">Order Now</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOW IT WORKS -->
+        <section class="how-section">
+            <h2>How it works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="num">1</div>
+                    <p>Order your kit and we post it to you within 2 days.</p>
+                </div>
+                <div class="step">
+                    <div class="num">2</div>
+                    <p>Use the safe, non-toxic ink pad to take your baby's print at home.</p>
+                </div>
+                <div class="step">
+                    <div class="num">3</div>
+                    <p>Send it back and we foil it by hand into a keepsake you'll treasure forever.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>&copy; 2025 The Bespoke Foil Company &nbsp;·&nbsp; thebespokefoilcompany.co.uk</footer>
+
+        <!-- Toast notification -->
+        <div id="bfc-toast"></div>
+
+        <!--
+    THIS PLACEHOLDER IS REPLACED AT RUNTIME BY render-template.js
+    Do not change the comment markers or the null default.
+  -->
+        <script>
+            const MEMORY_CATCHER = /*__MC_DATA__*/ null; /*__END_MC_DATA__*/
+        </script>
+
+        <!-- Referral capture: reads MEMORY_CATCHER.stripe_ref + sets bfc_ref cookie -->
+        <script src="/shared/referral-capture.js" defer></script>
+        <!-- Add-to-cart: exposes window.BFCCart.startCheckout -->
+        <script src="/shared/add-to-cart.js" defer></script>
+
+        <script>
+            // ── Populate the page from MEMORY_CATCHER ──────────────────────────────
+            document.addEventListener("DOMContentLoaded", function () {
+                var mc = window.MEMORY_CATCHER;
+                if (!mc) return; // shouldn't happen on a live referral page
+
+                // Hero + card
+                var heroName = document.getElementById("hero-name");
+                var mcName = document.getElementById("mc-name");
+                var mcPhoto = document.getElementById("mc-photo");
+                var mcOffer = document.getElementById("mc-offer");
+
+                if (heroName) heroName.textContent = mc.name || "Memory Catcher";
+                if (mcName) mcName.textContent = mc.name || "Your Memory Catcher";
+                if (mcPhoto) {
+                    mcPhoto.src = mc.photo || "/assets/mc-ashley.webp";
+                    mcPhoto.alt = (mc.name || "Memory Catcher") + " photo";
+                }
+                if (mcOffer) mcOffer.textContent = mc.offer || "";
+
+                // Offer code
+                if (mc.code) {
+                    var codeSection = document.getElementById("code-section");
+                    var codeEl = document.getElementById("mc-code");
+                    if (codeSection) codeSection.style.display = "flex";
+                    if (codeEl) codeEl.textContent = mc.code;
+                }
+            });
+
+            // ── Toast helper ────────────────────────────────────────────────────────
+            function showToast(msg, durationMs) {
+                var t = document.getElementById("bfc-toast");
+                if (!t) return;
+                t.textContent = msg;
+                t.classList.add("show");
+                setTimeout(function () {
+                    t.classList.remove("show");
+                }, durationMs || 3000);
+            }
+
+            // ── Order button handler ─────────────────────────────────────────────────
+            function order(kit, priceInPence) {
+                // Disable all buttons while redirecting
+                document.querySelectorAll(".btn-order").forEach(function (b) {
+                    b.disabled = true;
+                    b.textContent = "Loading…";
+                });
+
+                showToast("Taking you to secure checkout…", 8000);
+
+                var mc = window.MEMORY_CATCHER || {};
+
+                window.BFCCart
+                    ? window.BFCCart.startCheckout({
+                          kit: kit,
+                          price: priceInPence,
+                          personalisation: "later",
+                          colour: null,
+                          frame: null,
+                          font: null,
+                      })
+                    : (function () {
+                          // BFCCart not loaded yet (race) — retry once after a tick.
+                          setTimeout(function () {
+                              if (window.BFCCart) {
+                                  window.BFCCart.startCheckout({
+                                      kit: kit,
+                                      price: priceInPence,
+                                      personalisation: "later",
+                                  });
+                              } else {
+                                  showToast("Checkout unavailable — please refresh and try again.");
+                                  document.querySelectorAll(".btn-order").forEach(function (b) {
+                                      b.disabled = false;
+                                      b.textContent = "Order Now";
+                                  });
+                              }
+                          }, 400);
+                      })();
+            }
+        </script>
+    </body>
+</html>
