@@ -21,14 +21,12 @@ const DATA_CLOSE = "/*__END_MC_DATA__*/";
 
 /**
  * @param {object} referrer  row from the registry (name, photo, offer, code, stripe_ref)
- * @param {object} opts       { context, slug }
+ * @param {object} opts       { context, slug, request }
  * @returns {Promise<string>} full HTML
  */
-export async function renderReferralPage(referrer, { context, slug }) {
+export async function renderReferralPage(referrer, { context, slug, request }) {
   // Fetch the static template from our own origin (Netlify serves it).
-  const templateRes = await context.next
-    ? await fetchTemplateViaNext(context)
-    : await fetch(new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk"));
+  const templateRes = await fetchTemplate(context, request);
 
   let html = await templateRes.text();
 
@@ -70,11 +68,24 @@ export async function renderReferralPage(referrer, { context, slug }) {
 }
 
 // Fetch the template through the edge context so we hit the deployed static file.
-async function fetchTemplateViaNext(context) {
-  const req = new Request(
-    new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk")
-  );
-  return context.next(req);
+async function fetchTemplate(context, request) {
+  // In production (Netlify Edge), context.next() is defined and we want to load the
+  // template from the same host to avoid rewrite/proxy limitations.
+  if (context?.next && request) {
+    try {
+      const origin = new URL(request.url).origin;
+      const req = new Request(new URL(TEMPLATE_URL_PATH, origin));
+      const res = await context.next(req);
+      if (res.ok) return res;
+      console.warn("context.next() returned non-OK for template:", res.status);
+    } catch (err) {
+      console.warn("context.next() threw for template fetch:", err.message);
+    }
+  }
+
+  // Fallback (e.g. local dev / external fetch)
+  const base = request?.url ? new URL(request.url).origin : "https://www.thebespokefoilcompany.co.uk";
+  return fetch(new URL(TEMPLATE_URL_PATH, base));
 }
 
 // --- tiny escapers (no deps at the edge) ---
@@ -100,6 +111,3 @@ function escapeAttr(s) {
 //   3. Everything else in that file (renderMemoryCatcher(), the markup) stays.
 //   4. Delete the old per-person static files once the dynamic route is verified.
 // ----------------------------------------------------------------------------
-
-
-

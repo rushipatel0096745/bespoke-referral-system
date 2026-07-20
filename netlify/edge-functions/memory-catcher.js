@@ -61,7 +61,7 @@ export default async function handler(request, context) {
   }
 
   // 3a. Known referrer -> render the shared template with their data.
-  const html = await renderReferralPage(referrer, { context, slug });
+  const html = await renderReferralPage(referrer, { context, slug, request });
 
   const headers = new Headers({
     "content-type": "text/html; charset=utf-8",
