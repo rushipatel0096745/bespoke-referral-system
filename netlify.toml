@@ -2,6 +2,11 @@
   publish = "."
   functions = "netlify/functions"
 
+# Branch deploys — staging branch gets its own preview URL
+[context.staging]
+  environment = { NODE_ENV = "staging" }
+
+
 # Edge functions are auto-detected from netlify/edge-functions/
 # The path binding is declared inside memory-catcher.js via config.path
 # so no [[edge_functions]] block is needed here.

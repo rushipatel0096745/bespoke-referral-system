@@ -77,9 +77,9 @@ async function fetchTemplate(context) {
     // context.next() works in both production and local netlify dev.
     if (context?.next) {
         try {
-            const req = new Request(
-                new URL(TEMPLATE_URL_PATH, "https://www.thebespokefoilcompany.co.uk")
-            );
+            // Netlify ignores the hostname in context.next() — only the path matters.
+            // We use a dummy base so new URL() is satisfied.
+            const req = new Request(new URL(TEMPLATE_URL_PATH, "http://localhost"));
             const res = await context.next(req);
             if (res.ok) return res;
             console.warn("context.next() returned non-OK for template:", res.status);
